@@ -1,44 +1,43 @@
-﻿using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using NetStatInfoWin.Helpers;
+using NetStatInfoWin.Services;
+using NetStatInfoWin.ViewModels;
 
 namespace NetStatInfoWin;
 
-/// <summary>
-/// Provides application-specific behavior to supplement the default Application class.
-/// </summary>
 public partial class App : Application
 {
-    private Window? _window;
+    private static IResourceService _resourceService = null!;
+    private static MainViewModel _mainViewModel = null!;
 
-    /// <summary>
-    /// Initializes the singleton application object.  This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
+    internal static MainWindow MainWindowInstance { get; private set; } = null!;
+
+    internal static MainViewModel MainViewModel => _mainViewModel;
+
+    internal static IResourceService ResourceService => _resourceService;
+
     public App()
     {
         InitializeComponent();
+        ConfigureServices();
     }
 
-    /// <summary>
-    /// Invoked when the application is launched.
-    /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        _window = new MainWindow();
-        _window.Activate();
+        MainWindowInstance = new MainWindow();
+        MainWindowInstance.Activate();
+    }
+
+    private static void ConfigureServices()
+    {
+        _resourceService = new ResourceService();
+
+        var processMetadataService = new ProcessMetadataService();
+        var processConnectionSummarizer = new ProcessConnectionSummarizer(processMetadataService, _resourceService);
+        var connectionTableReader = new OwnedConnectionTableReader();
+        var networkSnapshotService = new NetworkSnapshotService(connectionTableReader, processConnectionSummarizer);
+        var sessionUsageAggregator = new SessionUsageAggregator(_resourceService);
+
+        _mainViewModel = new MainViewModel(networkSnapshotService, sessionUsageAggregator, _resourceService);
     }
 }

@@ -1,20 +1,55 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Automation;
+using NetStatInfoWin.ViewModels;
 
 namespace NetStatInfoWin;
 
-/// <summary>
-/// The main content page displayed inside the application window.
-/// Add your UI logic, event handlers, and data binding here.
-/// </summary>
 public sealed partial class MainPage : Page
 {
+    internal MainViewModel ViewModel { get; } = App.MainViewModel;
+
     public MainPage()
     {
         InitializeComponent();
+        DataContext = ViewModel;
+        AutomationProperties.SetName(RefreshButton, ViewModel.RefreshAutomationName);
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
 
-        // TODO: Add your initialization logic here.
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        App.MainWindowInstance.Activated += OnWindowActivated;
+        ViewModel.StartPollingCommand.Execute(null);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        App.MainWindowInstance.Activated -= OnWindowActivated;
+        ViewModel.StopPollingCommand.Execute(null);
+    }
+
+    private void OnRefreshClicked(object sender, RoutedEventArgs e)
+    {
+        ViewModel.RefreshCommand.Execute(null);
+    }
+
+    private void OnRefreshAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        ViewModel.RefreshCommand.Execute(null);
+    }
+
+    private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState == WindowActivationState.Deactivated)
+        {
+            ViewModel.StopPollingCommand.Execute(null);
+            return;
+        }
+
+        ViewModel.StartPollingCommand.Execute(null);
     }
 }

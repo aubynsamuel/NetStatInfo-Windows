@@ -1,2 +1,4 @@
 <Solution>
+  <Project Path="NetStatInfoWin.Tests/NetStatInfoWin.Tests.csproj" />
+  <Project Path="NetStatInfoWin/NetStatInfoWin.csproj" />
 </Solution>

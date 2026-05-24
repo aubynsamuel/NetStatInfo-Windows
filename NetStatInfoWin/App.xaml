@@ -8,9 +8,39 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#FF32D1FF" />
+                    <SolidColorBrush x:Key="AppAccentMutedBrush" Color="#2632D1FF" />
+                    <SolidColorBrush x:Key="SessionCardBrush" Color="#1B2333" />
+                    <SolidColorBrush x:Key="SectionCardBrush" Color="#162033" />
+                    <SolidColorBrush x:Key="SoftBorderBrush" Color="#33FFFFFF" />
+                    <SolidColorBrush x:Key="SentBrush" Color="#FF5CE1E6" />
+                    <SolidColorBrush x:Key="ReceivedBrush" Color="#FF8BFFAA" />
+                    <SolidColorBrush x:Key="EmptyStateBrush" Color="#CCFFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#FF006E8A" />
+                    <SolidColorBrush x:Key="AppAccentMutedBrush" Color="#14006E8A" />
+                    <SolidColorBrush x:Key="SessionCardBrush" Color="#FFF5F8FC" />
+                    <SolidColorBrush x:Key="SectionCardBrush" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="SoftBorderBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="SentBrush" Color="#FF007A94" />
+                    <SolidColorBrush x:Key="ReceivedBrush" Color="#FF177245" />
+                    <SolidColorBrush x:Key="EmptyStateBrush" Color="#CC2A2A2A" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="AppAccentMutedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="SessionCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="SectionCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
+                    <SolidColorBrush x:Key="SoftBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="SentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ReceivedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="EmptyStateBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

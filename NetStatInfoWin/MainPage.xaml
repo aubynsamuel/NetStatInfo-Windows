@@ -7,12 +7,387 @@
     xmlns:local="using:NetStatInfoWin"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F5" Invoked="OnRefreshAcceleratorInvoked" />
+    </Page.KeyboardAccelerators>
 
-    <!--
-        This is the main content area of your application.
-        Add your UI elements here — for example, controls, layouts, and data-bound views.
-        Use 'dotnet new winui-page' to create additional pages and navigate to them via
-        the Frame in MainWindow (RootFrame).
-    -->
-    <Grid />
+    <Grid Padding="32,24,32,28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="8">
+                <TextBlock
+                    x:Uid="HeaderTitle"
+                    FontSize="40"
+                    FontWeight="SemiBold" />
+                <Border
+                    Background="{ThemeResource AppAccentMutedBrush}"
+                    BorderBrush="{ThemeResource SoftBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="999"
+                    HorizontalAlignment="Left"
+                    Padding="12,6">
+                    <TextBlock
+                        x:Uid="HeaderSubtitle"
+                        Foreground="{ThemeResource AppAccentBrush}"
+                        FontSize="14"
+                        FontWeight="SemiBold" />
+                </Border>
+            </StackPanel>
+
+            <Button
+                x:Name="RefreshButton"
+                Grid.Column="1"
+                AccessKey="R"
+                AutomationProperties.AutomationId="RefreshButton"
+                Click="OnRefreshClicked"
+                HorizontalAlignment="Right"
+                MinHeight="44"
+                MinWidth="132"
+                Padding="16,12"
+                VerticalAlignment="Center">
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="10">
+                    <FontIcon Glyph="&#xE72C;" />
+                    <TextBlock
+                        x:Uid="RefreshButtonLabel"
+                        FontWeight="SemiBold" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <Border
+            Grid.Row="1"
+            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+            BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
+            BorderThickness="1"
+            CornerRadius="20"
+            Margin="0,20,0,0"
+            Padding="18,14"
+            Visibility="{Binding ErrorVisibility}">
+            <StackPanel Spacing="6">
+                <TextBlock
+                    x:Uid="ErrorTitle"
+                    FontWeight="SemiBold" />
+                <TextBlock
+                    Text="{Binding ErrorMessage}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Grid
+            Grid.Row="2"
+            Margin="0,20,0,0">
+            <Grid Visibility="{Binding LoadingVisibility}">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Spacing="14"
+                    VerticalAlignment="Center">
+                    <ProgressRing
+                        IsActive="True"
+                        Width="42"
+                        Height="42" />
+                    <TextBlock
+                        x:Uid="LoadingLabel"
+                        HorizontalAlignment="Center"
+                        FontWeight="SemiBold" />
+                </StackPanel>
+            </Grid>
+
+            <ListView
+                AutomationProperties.AutomationId="NetworkDashboardList"
+                HorizontalContentAlignment="Stretch"
+                IsItemClickEnabled="False"
+                ItemsSource="{Binding ActiveProcesses}"
+                Margin="0"
+                SelectionMode="None"
+                Visibility="{Binding ContentVisibility}">
+                <ListView.Header>
+                    <StackPanel Spacing="18">
+                        <Border
+                            Background="{ThemeResource SessionCardBrush}"
+                            BorderBrush="{ThemeResource SoftBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="28"
+                            Padding="24">
+                            <StackPanel Spacing="18">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Spacing="6">
+                                        <TextBlock
+                                            x:Uid="SummaryHeading"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            FontSize="18"
+                                            FontWeight="SemiBold" />
+                                        <TextBlock
+                                            Text="{Binding FormattedTotalUsage}"
+                                            FontSize="36"
+                                            FontWeight="Bold" />
+                                    </StackPanel>
+
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        Spacing="6">
+                                        <TextBlock
+                                            Text="{Binding SessionStartedLabel}"
+                                            HorizontalAlignment="Right"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock
+                                            Text="{Binding LastUpdatedLabel}"
+                                            HorizontalAlignment="Right"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border
+                                        Background="{ThemeResource AppAccentMutedBrush}"
+                                        CornerRadius="22"
+                                        Padding="16">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock
+                                                x:Uid="SentCardLabel"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                FontSize="14" />
+                                            <TextBlock
+                                                Text="{Binding FormattedSentUsage}"
+                                                Foreground="{ThemeResource SentBrush}"
+                                                FontSize="24"
+                                                FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border
+                                        Grid.Column="1"
+                                        Background="{ThemeResource AppAccentMutedBrush}"
+                                        CornerRadius="22"
+                                        Padding="16">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock
+                                                x:Uid="ReceivedCardLabel"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                FontSize="14" />
+                                            <TextBlock
+                                                Text="{Binding FormattedReceivedUsage}"
+                                                Foreground="{ThemeResource ReceivedBrush}"
+                                                FontSize="24"
+                                                FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock
+                                    x:Uid="SummaryFootnote"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="12">
+                            <TextBlock
+                                x:Uid="AdaptersSectionTitle"
+                                FontSize="24"
+                                FontWeight="SemiBold" />
+
+                            <ItemsControl
+                                ItemsSource="{Binding ActiveAdapters}"
+                                Visibility="{Binding AdapterSectionVisibility}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Background="{ThemeResource SectionCardBrush}"
+                                            BorderBrush="{ThemeResource SoftBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="22"
+                                            Margin="0,0,0,10"
+                                            Padding="18,16">
+                                            <StackPanel Spacing="12">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock
+                                                            Text="{Binding Name}"
+                                                            FontWeight="SemiBold" />
+                                                        <TextBlock
+                                                            Text="{Binding Subtitle}"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Text="{Binding FormattedTotalBytes}"
+                                                        Foreground="{ThemeResource AppAccentBrush}"
+                                                        FontWeight="SemiBold"
+                                                        VerticalAlignment="Center" />
+                                                </Grid>
+
+                                                <Grid ColumnSpacing="12">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock
+                                                            Text="{Binding SentLabel}"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                        <TextBlock
+                                                            Text="{Binding FormattedSentBytes}"
+                                                            Foreground="{ThemeResource SentBrush}"
+                                                            FontWeight="SemiBold" />
+                                                    </StackPanel>
+
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Spacing="4">
+                                                        <TextBlock
+                                                            Text="{Binding ReceivedLabel}"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                        <TextBlock
+                                                            Text="{Binding FormattedReceivedBytes}"
+                                                            Foreground="{ThemeResource ReceivedBrush}"
+                                                            FontWeight="SemiBold" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Border
+                                Background="{ThemeResource SectionCardBrush}"
+                                BorderBrush="{ThemeResource SoftBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="22"
+                                Padding="18,16"
+                                Visibility="{Binding AdapterEmptyVisibility}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock
+                                        x:Uid="AdaptersEmptyTitle"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        x:Uid="AdaptersEmptyDescription"
+                                        Foreground="{ThemeResource EmptyStateBrush}"
+                                        TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock
+                            x:Uid="ProcessesSectionTitle"
+                            FontSize="24"
+                            FontWeight="SemiBold" />
+                    </StackPanel>
+                </ListView.Header>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Background="{ThemeResource SectionCardBrush}"
+                            BorderBrush="{ThemeResource SoftBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="22"
+                            Margin="0,0,0,10"
+                            Padding="18,16">
+                            <Grid ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border
+                                    Width="48"
+                                    Height="48"
+                                    Background="{ThemeResource AppAccentMutedBrush}"
+                                    CornerRadius="24"
+                                    VerticalAlignment="Top">
+                                    <TextBlock
+                                        Text="{Binding Initials}"
+                                        Foreground="{ThemeResource AppAccentBrush}"
+                                        HorizontalAlignment="Center"
+                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                        VerticalAlignment="Center" />
+                                </Border>
+
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Spacing="4">
+                                    <TextBlock
+                                        Text="{Binding DisplayName}"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        Text="{Binding ProtocolMix}"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock
+                                        Text="{Binding RemoteEndpointSummary}"
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+
+                                <StackPanel
+                                    Grid.Column="2"
+                                    HorizontalAlignment="Right"
+                                    Spacing="4">
+                                    <TextBlock
+                                        Text="{Binding ActiveConnectionCountLabel}"
+                                        Foreground="{ThemeResource AppAccentBrush}"
+                                        HorizontalAlignment="Right"
+                                        FontWeight="SemiBold" />
+                                    <TextBlock
+                                        Text="{Binding ProcessIdentifierLabel}"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+
+                <ListView.Footer>
+                    <Border
+                        Background="{ThemeResource SectionCardBrush}"
+                        BorderBrush="{ThemeResource SoftBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="22"
+                        Padding="18,16"
+                        Visibility="{Binding ProcessEmptyVisibility}">
+                        <StackPanel Spacing="6">
+                            <TextBlock
+                                x:Uid="ProcessesEmptyTitle"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                x:Uid="ProcessesEmptyDescription"
+                                Foreground="{ThemeResource EmptyStateBrush}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </ListView.Footer>
+            </ListView>
+        </Grid>
+    </Grid>
 </Page>

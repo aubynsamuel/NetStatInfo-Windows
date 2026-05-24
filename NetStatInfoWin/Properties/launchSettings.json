@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "NetStatInfoWin (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "NetStatInfoWin (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

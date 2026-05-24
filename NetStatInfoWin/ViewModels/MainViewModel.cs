@@ -122,7 +122,12 @@ internal sealed partial class MainViewModel : ObservableObject
 
     public Visibility ProcessEmptyVisibility => HasNoProcessData ? Visibility.Visible : Visibility.Collapsed;
 
-    public async Task RefreshAsync()
+    public Task RefreshAsync()
+    {
+        return RefreshAsync(preserveProcessOrder: false);
+    }
+
+    private async Task RefreshAsync(bool preserveProcessOrder)
     {
         if (!await _refreshLock.WaitAsync(0))
         {
@@ -143,8 +148,18 @@ internal sealed partial class MainViewModel : ObservableObject
             LastUpdatedLabel = _resourceService.Format("LastUpdatedFormat", ValueFormatter.FormatTime(sessionSnapshot.Timestamp));
             SessionStartedLabel = _resourceService.Format("SessionStartedFormat", ValueFormatter.FormatTime(sessionSnapshot.SessionStartedAt));
 
-            ReplaceCollection(ActiveAdapters, sessionSnapshot.ActiveAdapters);
-            ReplaceCollection(ActiveProcesses, sessionSnapshot.ActiveProcesses);
+            SyncCollection(
+                ActiveAdapters,
+                sessionSnapshot.ActiveAdapters,
+                static item => item.Name,
+                static (current, incoming) => current.UpdateFrom(incoming));
+
+            SyncCollection(
+                ActiveProcesses,
+                sessionSnapshot.ActiveProcesses,
+                static item => item.ProcessId,
+                static (current, incoming) => current.UpdateFrom(incoming),
+                reorderExistingItems: !preserveProcessOrder);
 
             ErrorMessage = string.Empty;
             _hasLoadedAtLeastOnce = true;
@@ -179,12 +194,44 @@ internal sealed partial class MainViewModel : ObservableObject
         _pollingCancellationTokenSource = null;
     }
 
-    private static void ReplaceCollection<T>(ObservableCollection<T> collection, IEnumerable<T> values)
+    private static void SyncCollection<T, TKey>(
+        ObservableCollection<T> collection,
+        IReadOnlyList<T> values,
+        Func<T, TKey> keySelector,
+        Action<T, T> updateExisting,
+        bool reorderExistingItems = true)
+        where TKey : notnull
     {
-        collection.Clear();
-        foreach (T value in values)
+        Dictionary<TKey, T> existingByKey = collection.ToDictionary(keySelector);
+
+        for (int index = 0; index < values.Count; index++)
         {
-            collection.Add(value);
+            T incoming = values[index];
+            TKey key = keySelector(incoming);
+
+            if (existingByKey.TryGetValue(key, out T? existing))
+            {
+                updateExisting(existing, incoming);
+
+                if (reorderExistingItems)
+                {
+                    int currentIndex = collection.IndexOf(existing);
+                    if (currentIndex != index)
+                    {
+                        collection.Move(currentIndex, index);
+                    }
+                }
+
+                existingByKey.Remove(key);
+                continue;
+            }
+
+            collection.Insert(index, incoming);
+        }
+
+        foreach (T leftover in existingByKey.Values)
+        {
+            collection.Remove(leftover);
         }
     }
 
@@ -192,13 +239,13 @@ internal sealed partial class MainViewModel : ObservableObject
     {
         using PeriodicTimer timer = new(TimeSpan.FromSeconds(2));
 
-        await RefreshAsync();
+        await RefreshAsync(preserveProcessOrder: true);
 
         try
         {
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
-                await RefreshAsync();
+                await RefreshAsync(preserveProcessOrder: true);
             }
         }
         catch (OperationCanceledException)

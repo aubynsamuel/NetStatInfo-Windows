@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="..\NetStatInfoWin\Helpers\IResourceService.cs" Link="Shared\Helpers\IResourceService.cs" />
+    <Compile Include="..\NetStatInfoWin\Helpers\ObservableObject.cs" Link="Shared\Helpers\ObservableObject.cs" />
     <Compile Include="..\NetStatInfoWin\Helpers\ValueFormatter.cs" Link="Shared\Helpers\ValueFormatter.cs" />
     <Compile Include="..\NetStatInfoWin\Models\AdapterUsageSummary.cs" Link="Shared\Models\AdapterUsageSummary.cs" />
     <Compile Include="..\NetStatInfoWin\Models\ProcessConnectionSummary.cs" Link="Shared\Models\ProcessConnectionSummary.cs" />

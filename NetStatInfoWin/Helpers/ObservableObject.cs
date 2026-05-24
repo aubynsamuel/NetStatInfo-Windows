@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace NetStatInfoWin.Helpers;
 
-internal abstract class ObservableObject : INotifyPropertyChanged
+public abstract class ObservableObject : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 

@@ -13,7 +13,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
 
         AppWindow.SetIcon("Assets/AppIcon.ico");
-        AppWindow.Resize(new SizeInt32(1320, 900));
+        AppWindow.Resize(new SizeInt32(800, 700));
 
         RootFrame.Navigate(typeof(MainPage));
     }

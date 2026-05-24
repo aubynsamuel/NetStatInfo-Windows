@@ -1,49 +1,54 @@
 using System.Collections.ObjectModel;
-using Microsoft.UI.Xaml;
 using NetStatInfoWin.Helpers;
 using NetStatInfoWin.Models;
 using NetStatInfoWin.Services;
 
 namespace NetStatInfoWin.ViewModels;
 
-internal sealed partial class MainViewModel : ObservableObject
+internal sealed class MainViewModel : ObservableObject
 {
-    private readonly INetworkSnapshotService _networkSnapshotService;
-    private readonly ISessionUsageAggregator _sessionUsageAggregator;
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(30);
+    private readonly IAttributedAppUsageService _attributedAppUsageService;
+    private readonly IUsageWindowProvider _usageWindowProvider;
+    private readonly IAppUsageAggregator _appUsageAggregator;
+    private readonly IDelayProvider _delayProvider;
     private readonly IResourceService _resourceService;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
-
+    private UsageRange _selectedRange = UsageRange.Session;
     private bool _isLoading = true;
     private bool _hasLoadedAtLeastOnce;
     private string _errorMessage = string.Empty;
     private string _formattedTotalUsage = "0 B";
     private string _formattedSentUsage = "0 B";
     private string _formattedReceivedUsage = "0 B";
+    private string _selectedRangeDisplayLabel = string.Empty;
+    private string _windowLabel = string.Empty;
     private string _lastUpdatedLabel = string.Empty;
-    private string _sessionStartedLabel = string.Empty;
     private CancellationTokenSource? _pollingCancellationTokenSource;
 
     public MainViewModel(
-        INetworkSnapshotService networkSnapshotService,
-        ISessionUsageAggregator sessionUsageAggregator,
+        IAttributedAppUsageService attributedAppUsageService,
+        IUsageWindowProvider usageWindowProvider,
+        IAppUsageAggregator appUsageAggregator,
+        IDelayProvider delayProvider,
         IResourceService resourceService)
     {
-        _networkSnapshotService = networkSnapshotService;
-        _sessionUsageAggregator = sessionUsageAggregator;
+        _attributedAppUsageService = attributedAppUsageService;
+        _usageWindowProvider = usageWindowProvider;
+        _appUsageAggregator = appUsageAggregator;
+        _delayProvider = delayProvider;
         _resourceService = resourceService;
 
-        ActiveAdapters = new ObservableCollection<AdapterUsageSummary>();
-        ActiveProcesses = new ObservableCollection<ProcessConnectionSummary>();
-
+        AppUsages = [];
         RefreshAutomationName = _resourceService.GetString("RefreshButtonAutomationName");
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         StartPollingCommand = new RelayCommand(StartPolling);
         StopPollingCommand = new RelayCommand(StopPolling);
+
+        UpdateSelectedRangePresentation();
     }
 
-    public ObservableCollection<AdapterUsageSummary> ActiveAdapters { get; }
-
-    public ObservableCollection<ProcessConnectionSummary> ActiveProcesses { get; }
+    public ObservableCollection<AppUsageSummary> AppUsages { get; }
 
     public AsyncRelayCommand RefreshCommand { get; }
 
@@ -71,16 +76,22 @@ internal sealed partial class MainViewModel : ObservableObject
         private set => SetProperty(ref _formattedReceivedUsage, value);
     }
 
+    public string SelectedRangeDisplayLabel
+    {
+        get => _selectedRangeDisplayLabel;
+        private set => SetProperty(ref _selectedRangeDisplayLabel, value);
+    }
+
+    public string WindowLabel
+    {
+        get => _windowLabel;
+        private set => SetProperty(ref _windowLabel, value);
+    }
+
     public string LastUpdatedLabel
     {
         get => _lastUpdatedLabel;
         private set => SetProperty(ref _lastUpdatedLabel, value);
-    }
-
-    public string SessionStartedLabel
-    {
-        get => _sessionStartedLabel;
-        private set => SetProperty(ref _sessionStartedLabel, value);
     }
 
     public string ErrorMessage
@@ -91,7 +102,6 @@ internal sealed partial class MainViewModel : ObservableObject
             if (SetProperty(ref _errorMessage, value))
             {
                 OnPropertyChanged(nameof(HasError));
-                OnPropertyChanged(nameof(ErrorVisibility));
             }
         }
     }
@@ -102,78 +112,33 @@ internal sealed partial class MainViewModel : ObservableObject
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
-    public bool HasAdapterData => ActiveAdapters.Count > 0;
+    public bool HasUsageData => AppUsages.Count > 0;
 
-    public bool HasNoAdapterData => !HasAdapterData;
+    public bool HasNoUsageData => !HasUsageData;
 
-    public bool HasProcessData => ActiveProcesses.Count > 0;
+    public bool IsSessionSelected => _selectedRange == UsageRange.Session;
 
-    public bool HasNoProcessData => !HasProcessData;
+    public bool IsLastHourSelected => _selectedRange == UsageRange.LastHour;
 
-    public Visibility ErrorVisibility => HasError ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsLastSixHoursSelected => _selectedRange == UsageRange.LastSixHours;
 
-    public Visibility LoadingVisibility => IsLoadingFirstLoad ? Visibility.Visible : Visibility.Collapsed;
-
-    public Visibility ContentVisibility => IsContentVisible ? Visibility.Visible : Visibility.Collapsed;
-
-    public Visibility AdapterSectionVisibility => HasAdapterData ? Visibility.Visible : Visibility.Collapsed;
-
-    public Visibility AdapterEmptyVisibility => HasNoAdapterData ? Visibility.Visible : Visibility.Collapsed;
-
-    public Visibility ProcessEmptyVisibility => HasNoProcessData ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsTodaySelected => _selectedRange == UsageRange.Today;
 
     public Task RefreshAsync()
     {
-        return RefreshAsync(preserveProcessOrder: false);
+        return RefreshAsync(reorderAppRows: true);
     }
 
-    private async Task RefreshAsync(bool preserveProcessOrder)
+    public async Task SelectRangeAsync(UsageRange range)
     {
-        if (!await _refreshLock.WaitAsync(0))
+        if (_selectedRange == range)
         {
             return;
         }
 
-        try
-        {
-            _isLoading = true;
-            NotifyVisualStateChanged();
-
-            NetworkCapture capture = await _networkSnapshotService.CaptureSnapshotAsync(CancellationToken.None);
-            SessionNetworkSnapshot sessionSnapshot = _sessionUsageAggregator.BuildSessionSnapshot(capture);
-
-            FormattedTotalUsage = ValueFormatter.FormatBytes(sessionSnapshot.TotalSentBytes + sessionSnapshot.TotalReceivedBytes);
-            FormattedSentUsage = ValueFormatter.FormatBytes(sessionSnapshot.TotalSentBytes);
-            FormattedReceivedUsage = ValueFormatter.FormatBytes(sessionSnapshot.TotalReceivedBytes);
-            LastUpdatedLabel = _resourceService.Format("LastUpdatedFormat", ValueFormatter.FormatTime(sessionSnapshot.Timestamp));
-            SessionStartedLabel = _resourceService.Format("SessionStartedFormat", ValueFormatter.FormatTime(sessionSnapshot.SessionStartedAt));
-
-            SyncCollection(
-                ActiveAdapters,
-                sessionSnapshot.ActiveAdapters,
-                static item => item.Name,
-                static (current, incoming) => current.UpdateFrom(incoming));
-
-            SyncCollection(
-                ActiveProcesses,
-                sessionSnapshot.ActiveProcesses,
-                static item => item.ProcessId,
-                static (current, incoming) => current.UpdateFrom(incoming),
-                reorderExistingItems: !preserveProcessOrder);
-
-            ErrorMessage = string.Empty;
-            _hasLoadedAtLeastOnce = true;
-        }
-        catch
-        {
-            ErrorMessage = _resourceService.GetString("GenericRefreshError");
-        }
-        finally
-        {
-            _isLoading = false;
-            NotifyVisualStateChanged();
-            _refreshLock.Release();
-        }
+        _selectedRange = range;
+        UpdateSelectedRangePresentation();
+        await RefreshAsync(reorderAppRows: true);
     }
 
     public void StartPolling()
@@ -194,12 +159,127 @@ internal sealed partial class MainViewModel : ObservableObject
         _pollingCancellationTokenSource = null;
     }
 
+    private async Task RefreshAsync(bool reorderAppRows)
+    {
+        await _refreshLock.WaitAsync();
+
+        try
+        {
+            _isLoading = true;
+            NotifyVisualStateChanged();
+
+            UsageWindow window = _usageWindowProvider.CreateWindow(_selectedRange);
+            IReadOnlyList<ConnectionProfileUsageCapture> profileCaptures =
+                await _attributedAppUsageService.GetUsageByProfileAsync(window, CancellationToken.None);
+
+            UsageWindowSnapshot snapshot = _appUsageAggregator.BuildSnapshot(window, profileCaptures);
+
+            FormattedTotalUsage = ValueFormatter.FormatBytes(snapshot.TotalBytes);
+            FormattedSentUsage = ValueFormatter.FormatBytes(snapshot.TotalSentBytes);
+            FormattedReceivedUsage = ValueFormatter.FormatBytes(snapshot.TotalReceivedBytes);
+            SelectedRangeDisplayLabel = GetRangeDisplayLabel(snapshot.SelectedRange);
+            WindowLabel = BuildWindowLabel(snapshot);
+            LastUpdatedLabel = _resourceService.Format("LastUpdatedFormat", ValueFormatter.FormatTime(snapshot.RefreshedAt));
+
+            SyncCollection(
+                AppUsages,
+                snapshot.AppRows,
+                static item => item.UsageKey,
+                static (current, incoming) => current.UpdateFrom(incoming),
+                reorderExistingItems: reorderAppRows);
+
+            ErrorMessage = string.Empty;
+            _hasLoadedAtLeastOnce = true;
+        }
+        catch (UsageLoadException ex)
+        {
+            ErrorMessage = ex.Kind switch
+            {
+                UsageLoadFailureKind.Unsupported => _resourceService.GetString("UsageUnsupportedError"),
+                _ => _resourceService.GetString("GenericRefreshError"),
+            };
+        }
+        catch
+        {
+            ErrorMessage = _resourceService.GetString("GenericRefreshError");
+        }
+        finally
+        {
+            _isLoading = false;
+            NotifyVisualStateChanged();
+            _refreshLock.Release();
+        }
+    }
+
+    private async Task PollUntilCancelledAsync(CancellationToken cancellationToken)
+    {
+        await RefreshAsync(reorderAppRows: false);
+
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await _delayProvider.DelayAsync(PollInterval, cancellationToken);
+                await RefreshAsync(reorderAppRows: false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void UpdateSelectedRangePresentation()
+    {
+        SelectedRangeDisplayLabel = GetRangeDisplayLabel(_selectedRange);
+        OnPropertyChanged(nameof(IsSessionSelected));
+        OnPropertyChanged(nameof(IsLastHourSelected));
+        OnPropertyChanged(nameof(IsLastSixHoursSelected));
+        OnPropertyChanged(nameof(IsTodaySelected));
+    }
+
+    private string GetRangeDisplayLabel(UsageRange range)
+    {
+        return range switch
+        {
+            UsageRange.Session => _resourceService.GetString("RangeSessionLabel"),
+            UsageRange.LastHour => _resourceService.GetString("RangeLastHourLabel"),
+            UsageRange.LastSixHours => _resourceService.GetString("RangeLastSixHoursLabel"),
+            UsageRange.Today => _resourceService.GetString("RangeTodayLabel"),
+            _ => _resourceService.GetString("RangeSessionLabel"),
+        };
+    }
+
+    private string BuildWindowLabel(UsageWindowSnapshot snapshot)
+    {
+        return snapshot.SelectedRange switch
+        {
+            UsageRange.Session => _resourceService.Format(
+                "SessionStartedFormat",
+                ValueFormatter.FormatTime(snapshot.WindowStart)),
+            UsageRange.Today => _resourceService.Format(
+                "WindowSinceFormat",
+                ValueFormatter.FormatTime(snapshot.WindowStart)),
+            _ => _resourceService.Format(
+                "WindowRangeFormat",
+                ValueFormatter.FormatTime(snapshot.WindowStart),
+                ValueFormatter.FormatTime(snapshot.WindowEnd)),
+        };
+    }
+
+    private void NotifyVisualStateChanged()
+    {
+        OnPropertyChanged(nameof(IsLoadingFirstLoad));
+        OnPropertyChanged(nameof(IsContentVisible));
+        OnPropertyChanged(nameof(HasUsageData));
+        OnPropertyChanged(nameof(HasNoUsageData));
+    }
+
     private static void SyncCollection<T, TKey>(
         ObservableCollection<T> collection,
         IReadOnlyList<T> values,
         Func<T, TKey> keySelector,
         Action<T, T> updateExisting,
-        bool reorderExistingItems = true)
+        bool reorderExistingItems)
         where TKey : notnull
     {
         Dictionary<TKey, T> existingByKey = collection.ToDictionary(keySelector);
@@ -233,38 +313,5 @@ internal sealed partial class MainViewModel : ObservableObject
         {
             collection.Remove(leftover);
         }
-    }
-
-    private async Task PollUntilCancelledAsync(CancellationToken cancellationToken)
-    {
-        using PeriodicTimer timer = new(TimeSpan.FromSeconds(2));
-
-        await RefreshAsync(preserveProcessOrder: true);
-
-        try
-        {
-            while (await timer.WaitForNextTickAsync(cancellationToken))
-            {
-                await RefreshAsync(preserveProcessOrder: true);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private void NotifyVisualStateChanged()
-    {
-        OnPropertyChanged(nameof(IsLoadingFirstLoad));
-        OnPropertyChanged(nameof(IsContentVisible));
-        OnPropertyChanged(nameof(HasAdapterData));
-        OnPropertyChanged(nameof(HasNoAdapterData));
-        OnPropertyChanged(nameof(HasProcessData));
-        OnPropertyChanged(nameof(HasNoProcessData));
-        OnPropertyChanged(nameof(LoadingVisibility));
-        OnPropertyChanged(nameof(ContentVisibility));
-        OnPropertyChanged(nameof(AdapterSectionVisibility));
-        OnPropertyChanged(nameof(AdapterEmptyVisibility));
-        OnPropertyChanged(nameof(ProcessEmptyVisibility));
     }
 }

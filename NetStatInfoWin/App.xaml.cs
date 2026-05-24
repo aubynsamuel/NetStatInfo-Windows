@@ -31,13 +31,17 @@ public partial class App : Application
     private static void ConfigureServices()
     {
         _resourceService = new ResourceService();
+        var usageWindowProvider = new UsageWindowProvider(TimeProvider.System);
+        var displayNameResolver = new AppUsageDisplayNameResolver();
+        var attributedAppUsageService = new AttributedAppUsageService(displayNameResolver);
+        var appUsageAggregator = new AppUsageAggregator(_resourceService);
+        var delayProvider = new SystemDelayProvider();
 
-        var processMetadataService = new ProcessMetadataService();
-        var processConnectionSummarizer = new ProcessConnectionSummarizer(processMetadataService, _resourceService);
-        var connectionTableReader = new OwnedConnectionTableReader();
-        var networkSnapshotService = new NetworkSnapshotService(connectionTableReader, processConnectionSummarizer);
-        var sessionUsageAggregator = new SessionUsageAggregator(_resourceService);
-
-        _mainViewModel = new MainViewModel(networkSnapshotService, sessionUsageAggregator, _resourceService);
+        _mainViewModel = new MainViewModel(
+            attributedAppUsageService,
+            usageWindowProvider,
+            appUsageAggregator,
+            delayProvider,
+            _resourceService);
     }
 }

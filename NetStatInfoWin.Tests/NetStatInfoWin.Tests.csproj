@@ -19,17 +19,29 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\NetStatInfoWin\Helpers\AsyncRelayCommand.cs" Link="Shared\Helpers\AsyncRelayCommand.cs" />
     <Compile Include="..\NetStatInfoWin\Helpers\IResourceService.cs" Link="Shared\Helpers\IResourceService.cs" />
     <Compile Include="..\NetStatInfoWin\Helpers\ObservableObject.cs" Link="Shared\Helpers\ObservableObject.cs" />
+    <Compile Include="..\NetStatInfoWin\Helpers\RelayCommand.cs" Link="Shared\Helpers\RelayCommand.cs" />
     <Compile Include="..\NetStatInfoWin\Helpers\ValueFormatter.cs" Link="Shared\Helpers\ValueFormatter.cs" />
-    <Compile Include="..\NetStatInfoWin\Models\AdapterUsageSummary.cs" Link="Shared\Models\AdapterUsageSummary.cs" />
-    <Compile Include="..\NetStatInfoWin\Models\ProcessConnectionSummary.cs" Link="Shared\Models\ProcessConnectionSummary.cs" />
-    <Compile Include="..\NetStatInfoWin\Models\SessionNetworkSnapshot.cs" Link="Shared\Models\SessionNetworkSnapshot.cs" />
-    <Compile Include="..\NetStatInfoWin\Models\NetworkCapture.cs" Link="Shared\Models\NetworkCapture.cs" />
-    <Compile Include="..\NetStatInfoWin\Services\IProcessMetadataService.cs" Link="Shared\Services\IProcessMetadataService.cs" />
-    <Compile Include="..\NetStatInfoWin\Services\ISessionUsageAggregator.cs" Link="Shared\Services\ISessionUsageAggregator.cs" />
-    <Compile Include="..\NetStatInfoWin\Services\ProcessConnectionSummarizer.cs" Link="Shared\Services\ProcessConnectionSummarizer.cs" />
-    <Compile Include="..\NetStatInfoWin\Services\SessionUsageAggregator.cs" Link="Shared\Services\SessionUsageAggregator.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\AppUsageBucketKind.cs" Link="Shared\Models\AppUsageBucketKind.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\AppUsageSummary.cs" Link="Shared\Models\AppUsageSummary.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\AttributedAppUsageRecord.cs" Link="Shared\Models\AttributedAppUsageRecord.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\ConnectionProfileUsageCapture.cs" Link="Shared\Models\ConnectionProfileUsageCapture.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\UsageRange.cs" Link="Shared\Models\UsageRange.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\UsageWindow.cs" Link="Shared\Models\UsageWindow.cs" />
+    <Compile Include="..\NetStatInfoWin\Models\UsageWindowSnapshot.cs" Link="Shared\Models\UsageWindowSnapshot.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\AppUsageAggregator.cs" Link="Shared\Services\AppUsageAggregator.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\AppUsageDisplayNameResolver.cs" Link="Shared\Services\AppUsageDisplayNameResolver.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\IAppUsageAggregator.cs" Link="Shared\Services\IAppUsageAggregator.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\IAppUsageDisplayNameResolver.cs" Link="Shared\Services\IAppUsageDisplayNameResolver.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\IAttributedAppUsageService.cs" Link="Shared\Services\IAttributedAppUsageService.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\IDelayProvider.cs" Link="Shared\Services\IDelayProvider.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\IUsageWindowProvider.cs" Link="Shared\Services\IUsageWindowProvider.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\UsageLoadException.cs" Link="Shared\Services\UsageLoadException.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\UsageLoadFailureKind.cs" Link="Shared\Services\UsageLoadFailureKind.cs" />
+    <Compile Include="..\NetStatInfoWin\Services\UsageWindowProvider.cs" Link="Shared\Services\UsageWindowProvider.cs" />
+    <Compile Include="..\NetStatInfoWin\ViewModels\MainViewModel.cs" Link="Shared\ViewModels\MainViewModel.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,25 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Data;
+
+namespace NetStatInfoWin.Helpers;
+
+internal sealed class BooleanToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isVisible = value is true;
+
+        if (parameter is string parameterValue &&
+            string.Equals(parameterValue, "Invert", StringComparison.OrdinalIgnoreCase))
+        {
+            isVisible = !isVisible;
+        }
+
+        return isVisible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotSupportedException();
+    }
+}

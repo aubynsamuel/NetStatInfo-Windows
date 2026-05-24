@@ -1,7 +1,8 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Automation;
+using NetStatInfoWin.Models;
 using NetStatInfoWin.ViewModels;
 
 namespace NetStatInfoWin;
@@ -40,6 +41,26 @@ public sealed partial class MainPage : Page
     {
         args.Handled = true;
         ViewModel.RefreshCommand.Execute(null);
+    }
+
+    private async void OnSessionRangeClicked(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.SelectRangeAsync(UsageRange.Session);
+    }
+
+    private async void OnLastHourRangeClicked(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.SelectRangeAsync(UsageRange.LastHour);
+    }
+
+    private async void OnLastSixHoursRangeClicked(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.SelectRangeAsync(UsageRange.LastSixHours);
+    }
+
+    private async void OnTodayRangeClicked(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.SelectRangeAsync(UsageRange.Today);
     }
 
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)

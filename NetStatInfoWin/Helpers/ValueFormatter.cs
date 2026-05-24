@@ -30,6 +30,11 @@ internal static class ValueFormatter
         return timestamp.ToLocalTime().ToString("t", CultureInfo.CurrentCulture);
     }
 
+    public static string FormatPercentage(double value)
+    {
+        return value.ToString("P0", CultureInfo.CurrentCulture);
+    }
+
     public static string CreateInitials(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
